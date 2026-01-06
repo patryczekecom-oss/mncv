@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weryfikacja danych - mObywatel</title>
+  <style>
+    body {
+      background: #0f0f23;
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #ffffff;
+      padding: 20px;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: #1a1a2e;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 24px;
+      color: #ffffff;
+    }
+    .status {
+      text-align: center;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+    .status.verified {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+    .status.error {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+    .data-section {
+      background: #111827;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .data-label {
+      font-size: 14px;
+      color: #a1a1aa;
+      margin-bottom: 4px;
+    }
+    .data-value {
+      font-size: 16px;
+      font-weight: 500;
+      color: #ffffff;
+      margin-bottom: 16px;
+    }
+    .photo-container {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .photo {
+      width: 120px;
+      height: 150px;
+      border-radius: 8px;
+      border: 2px solid #374151;
+      object-fit: cover;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #a1a1aa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">Weryfikacja danych mObywatel</h1>
+    
+    <div id="loading" class="loading">
+      Ładowanie danych...
+    </div>
+    
+    <div id="content" style="display: none;">
+      <div id="status" class="status"></div>
+      
+      <div class="data-section">
+        <div class="photo-container">
+          <img id="photo" class="photo" style="display: none;" />
+        </div>
+        
+        <div class="data-label">Imię (imiona)</div>
+        <div id="name" class="data-value">-</div>
+        
+        <div class="data-label">Nazwisko</div>
+        <div id="surname" class="data-value">-</div>
+        
+        <div class="data-label">Numer PESEL</div>
+        <div id="pesel" class="data-value">-</div>
+        
+        <div class="data-label">Data urodzenia</div>
+        <div id="birthday" class="data-value">-</div>
+        
+        <div class="data-label">Obywatelstwo</div>
+        <div id="nationality" class="data-value">-</div>
+        
+        <div class="data-label">Imię ojca</div>
+        <div id="fathersName" class="data-value">-</div>
+        
+        <div class="data-label">Imię matki</div>
+        <div id="mothersName" class="data-value">-</div>
+        
+        <div class="data-label">Seria i nr dokumentu</div>
+        <div id="seriesAndNumber" class="data-value">-</div>
+        
+        <div class="data-label">Termin ważności</div>
+        <div id="expiryDate" class="data-value">-</div>
+        
+        <div class="data-label">Data wydania</div>
+        <div id="givenDate" class="data-value">-</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadUserData() {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      
+      if (!token) {
+        showError('Brak tokenu weryfikacyjnego');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/tokens/${encodeURIComponent(token)}/data`);
+        
+        if (!response.ok) {
+          throw new Error('Nie udało się pobrać danych');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success && result.userData) {
+          displayUserData(result.userData, result.tokenInfo);
+        } else {
+          showError('Brak danych dla tego tokenu');
+        }
+        
+      } catch (error) {
+        console.error('Error loading data:', error);
+        showError('Błąd podczas ładowania danych: ' + error.message);
+      }
+    }
+    
+    function displayUserData(userData, tokenInfo) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      
+      const status = document.getElementById('status');
+      status.className = 'status verified';
+      status.textContent = '✓ Dane zweryfikowane i potwierdzone';
+      
+      // Wypełnij dane
+      const fields = ['name', 'surname', 'pesel', 'birthday', 'nationality', 'fathersName', 'mothersName', 'seriesAndNumber', 'expiryDate', 'givenDate'];
+      
+      fields.forEach(field => {
+        const element = document.getElementById(field);
+        if (element && userData[field]) {
+          element.textContent = userData[field];
+        }
+      });
+      
+      // Wyświetl zdjęcie
+      if (userData.photo) {
+        const photo = document.getElementById('photo');
+        photo.src = userData.photo;
+        photo.style.display = 'block';
+      }
+    }
+    
+    function showError(message) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      
+      const status = document.getElementById('status');
+      status.className = 'status error';
+      status.textContent = '✗ ' + message;
+    }
+    
+    // Załaduj dane po załadowaniu strony
+    window.addEventListener('load', loadUserData);
+  </script>
+</body>
+</html>

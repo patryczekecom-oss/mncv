@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Potwierdzenie udostępnienia danych - mObywatel</title>
+  <link rel="stylesheet" href="opcjecard/main.css" />
+  <link rel="stylesheet" href="opcjecard/card.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #0f0f23;
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      color: #ffffff;
+      padding-bottom: 120px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .confirm-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      height: 60px;
+      border-bottom: 1px solid #374151;
+      background: #1a1a2e;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .confirm-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #ffffff;
+      margin: 0 auto;
+    }
+    .confirm-back {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      font-size: 16px;
+      color: #6366f1;
+      font-weight: 500;
+      background: none;
+      border: none;
+    }
+    .confirm-back img {
+      width: 20px;
+      height: 20px;
+      margin-right: 6px;
+      filter: brightness(0) saturate(100%) invert(45%) sepia(93%) saturate(2613%) hue-rotate(225deg) brightness(102%) contrast(101%);
+    }
+    .confirm-section {
+      max-width: 420px;
+      margin: 20px auto 0 auto;
+      background: #1a1a2e;
+      border-radius: 16px;
+      border: 1px solid #374151;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      padding: 24px 20px;
+    }
+    .confirm-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 16px;
+      text-align: left;
+    }
+    .confirm-box {
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .confirm-icon {
+      width: 40px;
+      height: 40px;
+      background: #6366f1;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .confirm-icon img {
+      width: 24px;
+      height: 24px;
+      filter: brightness(0) saturate(100%) invert(100%);
+    }
+    .confirm-doc-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+    .confirm-info-box {
+      background: #111827;
+      border: 1px solid #374151;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .confirm-info-label {
+      font-size: 14px;
+      color: #a1a1aa;
+      margin-bottom: 6px;
+    }
+    .confirm-info-value {
+      font-size: 15px;
+      font-weight: 500;
+      color: #ffffff;
+    }
+    .confirm-data-label {
+      font-size: 14px;
+      color: #a1a1aa;
+      margin-bottom: 8px;
+    }
+    .confirm-data-list {
+      font-size: 14px;
+      color: #ffffff;
+      margin: 0 0 0 16px;
+      padding: 0;
+      list-style-type: none;
+    }
+    .confirm-data-list li {
+      padding: 4px 0;
+      position: relative;
+    }
+    .confirm-data-list li:before {
+      content: '•';
+      color: #6366f1;
+      font-weight: bold;
+      position: absolute;
+      left: -12px;
+    }
+    .confirm-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      transition: all 0.3s ease;
+    }
+    .confirm-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+    }
+    .confirm-btn:active {
+      transform: translateY(0);
+    }
+    .confirm-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .bottom_bar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 100;
+      background: #1a1a2e;
+      border-top: 1px solid #374151;
+    }
+  </style>
+</head>
+<body>
+  <div class="confirm-top-bar">
+    <button class="confirm-back" onclick="window.history.back()">
+      <img src="opcjecard/images/back_blue.png" alt="Wróć" />
+      Wróć
+    </button>
+    <h1 class="confirm-title">Potwierdzenie udostępnienia</h1>
+  </div>
+
+  <div class="confirm-section" style="margin-top:24px; padding:24px 20px; max-width:460px;">
+    <div class="confirm-label" style="font-size:18px; font-weight:600; margin-bottom:16px;">Dokument, który potwierdzasz</div>
+    <div class="confirm-box" style="margin-bottom:16px; padding:14px 16px; border-radius:12px; background: rgba(17, 24, 39, 0.6);">
+      <div class="confirm-icon" style="width:40px; height:40px; border-radius:10px; background: linear-gradient(135deg, #6366f1, #4f46e5);">
+        <img src="assets/app/images/human.png" alt="mDowód" style="width:24px; height:24px; filter: brightness(0) invert(1);" />
+      </div>
+      <span class="confirm-doc-label" style="font-size:17px; font-weight:600; margin-left:12px;">mDowód</span>
+    </div>
+    <div class="confirm-info-box" style="margin-bottom:16px; padding:16px; border-radius:12px; background: rgba(17, 24, 39, 0.6);">
+      <div class="confirm-info-label" style="font-size:15px; color:#a1a1aa; margin-bottom:4px;">Podmiot, któremu udostępniasz dane</div>
+      <div class="confirm-info-value" style="font-size:16px; font-weight:500; color:#ffffff;">Użytkownik internetowej usługi weryfikacji mDowodu</div>
+    </div>
+    <div class="confirm-info-box" style="margin-bottom:0; padding:16px; border-radius:12px; background: rgba(17, 24, 39, 0.6);">
+      <div class="confirm-data-label" style="font-size:15px; color:#a1a1aa; margin-bottom:8px;">Dane, które udostępnisz</div>
+      <ul class="confirm-data-list" style="font-size:15px; color:#ffffff; margin:0 0 0 16px; padding:0; list-style-type:none;">
+        <li>Zdjęcie</li>
+        <li>Nazwisko</li>
+        <li>Imię (Imiona)</li>
+        <li>Numer PESEL</li>
+        <li>Data urodzenia</li>
+        <li>Obywatelstwo</li>
+        <li>Imię ojca</li>
+        <li>Imię matki</li>
+        <li>Seria i nr dokumentu mDowód</li>
+        <li>Termin ważności dokumentu mDowód</li>
+        <li>Data wydania dokumentu mDowód</li>
+      </ul>
+    </div>
+    <button class="confirm-btn" id="shareBtn" style="margin-top:24px; font-size:17px; border-radius:12px; padding:16px 0; font-weight:600; background: linear-gradient(135deg, #6366f1, #4f46e5);">
+      <span class="btn-text">Udostępnij dane</span>
+      <div class="btn-loader" style="display:none;"></div>
+    </button>
+  </div>
+
+  <div class="bottom_bar">
+    <div class="bottom_bar_grid">
+      <div class="bottom_element_grid" send="home">
+        <div class="bottom_element_image home"></div>
+        <p class="bottom_element_text">Pulpit</p>
+      </div>
+      <div class="bottom_element_grid" send="documents">
+        <div class="bottom_element_image documents_open"></div>
+        <p class="bottom_element_text">Dokumenty</p>
+      </div>
+      <div class="bottom_element_grid" send="services">
+        <div class="bottom_element_image services"></div>
+        <p class="bottom_element_text">Usługi</p>
+      </div>
+      <div class="bottom_element_grid" send="qr">
+        <div class="bottom_element_image qr"></div>
+        <p class="bottom_element_text">Kod QR</p>
+      </div>
+      <div class="bottom_element_grid" send="more">
+        <div class="bottom_element_image more"></div>
+        <p class="bottom_element_text">Więcej</p>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.querySelectorAll('.bottom_element_grid').forEach(el => {
+      el.addEventListener('click', function() {
+        const page = el.getAttribute('send');
+        if (page) window.location.href = page + '.html';
+      });
+    });
+    // --- Uniwersalne pobieranie tokenu i udostępnianie danych ---
+    // Załaduj token-utils.js dynamicznie jeśli nie jest podpięty
+    if (typeof getActiveToken === 'undefined') {
+      var s = document.createElement('script');
+      s.src = 'token-utils.js';
+      document.head.appendChild(s);
+    }
+    // Pobierz dane użytkownika z lokalnego storage
+    function getUserData() {
+      const data = {};
+      const fields = ['name', 'surname', 'pesel', 'nationality', 'birthday', 'photo', 'fathersName', 'mothersName', 'seriesAndNumber', 'expiryDate', 'givenDate'];
+      fields.forEach(field => {
+        data[field] = localStorage.getItem(field);
+      });
+      return data;
+    }
+
+    // Sprawdź czy wszystkie wymagane dane są dostępne
+    function validateUserData(data) {
+      return Object.values(data).every(value => value != null && value !== '');
+    }
+
+    document.getElementById('shareBtn').addEventListener('click', async function() {
+      const btn = this;
+      const btnText = btn.querySelector('.btn-text');
+      const btnLoader = btn.querySelector('.btn-loader');
+      btn.disabled = true;
+      btnText.style.opacity = '0';
+      btnLoader.style.display = 'block';
+
+      const userData = getUserData();
+      if (!validateUserData(userData)) {
+        alert('Brak wymaganych danych. Proszę wygenerować dokument ponownie.');
+        btn.disabled = false;
+        btnText.style.opacity = '1';
+        btnLoader.style.display = 'none';
+        return;
+      }
+
+      let token = '';
+      if (typeof getActiveToken === 'function') {
+        token = await getActiveToken();
+      } else {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('token')) token = params.get('token');
+        if (!token) token = localStorage.getItem('activeToken');
+      }
+      if (!token) {
+        alert('Brak tokenu. Nie można udostępnić danych.');
+        btn.disabled = false;
+        btnText.style.opacity = '1';
+        btnLoader.style.display = 'none';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/tokens/${encodeURIComponent(token)}/activate`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData)
+        });
+
+        if (res.ok) {
+          btnText.textContent = 'Dane udostępnione!';
+          btnText.style.opacity = '1';
+          btnLoader.style.display = 'none';
+          btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+          
+          setTimeout(() => {
+            window.location.href = 'documents.html';
+          }, 1500);
+        } else {
+          const data = await res.json();
+          alert('Błąd: ' + (data.error || 'Nie udało się udostępnić danych.'));
+          btn.disabled = false;
+          btnText.textContent = 'Udostępnij dane';
+          btnText.style.opacity = '1';
+          btnLoader.style.display = 'none';
+        }
+      } catch (e) {
+        alert('Błąd sieci: ' + e.message);
+        btn.disabled = false;
+        btnText.textContent = 'Udostępnij dane';
+        btnText.style.opacity = '1';
+        btnLoader.style.display = 'none';
+      }
+    });
+
+    // Animacja loadera
+    const style = document.createElement('style');
+    style.textContent = `
+      .btn-loader {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 0.8s linear infinite;
+        display: none;
+      }
+      @keyframes spin {
+        to { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+      .confirm-btn {
+        position: relative;
+      }
+      .confirm-btn:disabled {
+        opacity: 0.8;
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>

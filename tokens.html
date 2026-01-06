@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generator Tokenów</title>
+  <link rel="stylesheet" href="assets/page/login.css" />
+  <link rel="stylesheet" href="assets/page/header.css" />
+  <link rel="stylesheet" href="assets/page/common.css" />
+  <link rel="stylesheet" href="assets/page/footer.css" />
+  </head>
+<body>
+  <div class="header">
+    <div class="header_opacity"></div>
+    <img class="hamburger" src="assets/page/images/hamburger.png" />
+    <div class="header_holder">
+      <img class="x" src="assets/page/images/close.png" />
+      <div class="buttons header_buttons">
+        <div class="button" onclick="window.open('index.html')">
+          <p class="button_text">POWRÓT</p>
+          <div class="button_underline"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container" style="display:flex;gap:32px;align-items:flex-start;max-width:1200px;margin:0 auto;">
+    <!-- Lewa kolumna: Aktywne tokeny -->
+    <div style="flex:0 0 320px;max-width:320px;width:100%;">
+      <h3 style="text-align:center;margin-bottom:10px;">Aktywne tokeny</h3>
+      <ul id="activeTokensList" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;max-height:500px;overflow-y:auto;background:#e8f5e9;border-radius:10px;box-shadow:0 2px 8px #0001;padding:10px 0;min-width:280px;"></ul>
+    </div>
+    <!-- Środek: Generator tokenów -->
+    <div style="flex:1;min-width:340px;max-width:500px;">
+      <h2 style="text-align:center;margin-bottom:30px;">Generator Tokenów</h2>
+      <div class="generator_box" style="background:#fff2;border-radius:16px;padding:32px 24px 24px 24px;box-shadow:0 2px 16px #0001;">
+        <form id="tokenGenForm" autocomplete="off" style="margin-bottom: 32px;display:flex;flex-direction:column;gap:18px;">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label for="username" style="font-weight:600;">Nazwa użytkownika:</label>
+            <input type="text" id="username" required style="padding:8px 12px;border-radius:6px;border:1px solid #bbb;font-size:1.1rem;color:#222;font-weight:600;background:#fff;" />
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label for="usageCount" style="font-weight:600;">Ilość użyć:</label>
+            <input type="number" id="usageCount" min="1" max="100" value="1" required style="padding:8px 12px;border-radius:6px;border:1px solid #bbb;font-size:1.1rem;color:#222;font-weight:600;background:#fff;width:120px;" />
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label for="tokenValue" style="font-weight:600;">Token:</label>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <input type="text" id="tokenValue" required readonly style="flex:1;padding:8px 12px;border-radius:6px;border:1px solid #bbb;font-size:1.1rem;color:#222;font-weight:600;background:#f8f8f8;" />
+              <button type="button" id="generateTokenBtn" style="padding:8px 16px;border-radius:6px;background:#2a7cff;color:#fff;border:none;font-weight:600;cursor:pointer;">Generuj token</button>
+            </div>
+          </div>
+          <button type="submit" style="margin-top:10px;padding:10px 0;border-radius:6px;background:#1db954;color:#fff;font-weight:700;font-size:1.1rem;border:none;cursor:pointer;">Zatwierdź token</button>
+        </form>
+        <div id="formMessage" style="color:green;margin-bottom:20px;text-align:center;font-weight:600;"></div>
+      </div>
+    </div>
+    <!-- Prawa kolumna: Nieaktywne tokeny -->
+    <div style="flex:0 0 320px;max-width:320px;width:100%;">
+      <h3 style="text-align:center;margin-bottom:10px;">Nieaktywne tokeny</h3>
+      <ul id="inactiveTokensList" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;max-height:500px;overflow-y:auto;background:#ffe0b2;border-radius:10px;box-shadow:0 2px 8px #0002;padding:10px 0;min-width:280px;font-size:1.13em;color:#333;"></ul>
+    </div>
+  </div>
+  <div class="footer">
+    <p class="footer_title">PRYWACIK</p>
+  </div>
+  <script>
+    // Sprawdzenie czy użytkownik jest zalogowany jako admin
+    function checkAdminAuth() {
+      const isAdmin = localStorage.getItem('isAdmin');
+      if (!isAdmin || isAdmin !== 'true') {
+        console.error('Brak uprawnień administratora!');
+        document.getElementById('formMessage').textContent = 'Brak uprawnień. Przekierowuję...';
+        document.getElementById('formMessage').style.color = '#ff5252';
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 2000);
+        return false;
+      } else {
+        console.log('Uprawnienia administratora potwierdzone');
+        return true;
+      }
+    }
+    checkAdminAuth();
+  const API_URL = 'https://backendm-9np8.onrender.com';
+    
+    // Konfiguracja domyślnych opcji fetch
+    const defaultFetchOptions = {
+      credentials: 'include',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    };
+    
+    // Funkcja do sprawdzania statusu serwera
+    async function checkServerStatus() {
+      try {
+        const response = await fetch(`${API_URL}/`, {
+          ...defaultFetchOptions,
+          method: 'GET'
+        });
+        console.log('Status serwera:', response.status);
+        return response.ok;
+      } catch (error) {
+        console.error('Błąd połączenia z serwerem:', error);
+        return false;
+      }
+    }
+    
+    // Prosta funkcja do generowania tokena (4 znaki, zgodnie z backendem)
+    function generateToken(length = 4) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    }
+
+    document.getElementById('generateTokenBtn').addEventListener('click', function() {
+      document.getElementById('tokenValue').value = generateToken(4);
+    });
+
+    document.getElementById('tokenGenForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const usageCount = parseInt(document.getElementById('usageCount').value, 10);
+      const tokenValue = document.getElementById('tokenValue').value.trim();
+      if (!username || !tokenValue || !usageCount) {
+        document.getElementById('formMessage').textContent = 'Wypełnij wszystkie pola!';
+        document.getElementById('formMessage').style.color = '#ff5252';
+        return;
+      }
+      
+      const submitBtn = this.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Zapisuję...';
+      submitBtn.style.opacity = '0.7';
+      
+      try {
+        console.log('Wysyłanie tokenu:', { username, usageCount, token: tokenValue });
+        const res = await fetch(`${API_URL}/api/tokens`, {
+          method: 'POST',
+          credentials: 'include',
+          mode: 'cors',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ username, usageCount, token: tokenValue })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          console.log('Odpowiedź serwera:', data);
+          // Zapisz token do localStorage, by index.html i tokens.html mogły go używać
+          localStorage.setItem('activeToken', tokenValue);
+          const formMsg = document.getElementById('formMessage');
+          formMsg.style.color = '#1db954';
+          formMsg.textContent = 'Token zapisany!';
+          setTimeout(() => { formMsg.textContent = ''; }, 2000);
+          this.reset();
+          document.getElementById('tokenValue').value = '';
+          await renderTokenLists();
+        } else {
+          const errorData = await res.json().catch(() => ({ error: 'Nieznany błąd' }));
+          document.getElementById('formMessage').textContent = `Błąd: ${errorData.error || res.status}`;
+          document.getElementById('formMessage').style.color = '#ff5252';
+        }
+      } catch (error) {
+        console.error('Błąd sieci:', error);
+        document.getElementById('formMessage').textContent = 'Błąd połączenia z serwerem. Sprawdź połączenie internetowe.';
+        document.getElementById('formMessage').style.color = '#ff5252';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Zatwierdź token';
+        submitBtn.style.opacity = '1';
+      }
+    });
+
+    async function renderTokenLists(retryCount = 0) {
+      let tokens = [];
+      try {
+        const activeList = document.getElementById('activeTokensList');
+        const inactiveList = document.getElementById('inactiveTokensList');
+        activeList.innerHTML = '<li style="text-align:center;padding:10px;">Ładowanie...</li>';
+        inactiveList.innerHTML = '<li style="text-align:center;padding:10px;">Ładowanie...</li>';
+
+        console.log('Próba pobrania tokenów...');
+        const jwtToken = localStorage.getItem('token');
+        console.log('Token JWT do autoryzacji:', jwtToken ? 'Jest ustawiony' : 'Brak tokenu');
+
+        const res = await fetch(`${API_URL}/api/tokens`, {
+          method: 'GET',
+          credentials: 'include',
+          mode: 'cors',
+          headers: {
+            'Accept': 'application/json',
+            ...(jwtToken ? { 'Authorization': `Bearer ${jwtToken}` } : {})
+          }
+        });
+        console.log('Status odpowiedzi:', res.status);
+
+        if (res.ok) {
+          tokens = await res.json();
+          console.log('Pobrane tokeny:', tokens);
+        } else {
+          const errorData = await res.json().catch(() => ({ error: 'Nieznany błąd' }));
+          console.error('Błąd odpowiedzi:', errorData);
+          throw new Error(`Błąd pobierania tokenów: ${errorData.error || res.status}`);
+        }
+      } catch (error) {
+        console.error('Błąd:', error);
+        if (retryCount < 3) {
+          // Retry after 1 second
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return renderTokenLists(retryCount + 1);
+        }
+        document.getElementById('formMessage').textContent = 'Błąd pobierania tokenów. Odśwież stronę.';
+        document.getElementById('formMessage').style.color = '#ff5252';
+        return;
+      }
+      console.log('Tokeny z backendu:', tokens);
+      const activeList = document.getElementById('activeTokensList');
+      const inactiveList = document.getElementById('inactiveTokensList');
+      activeList.innerHTML = '';
+      inactiveList.innerHTML = '';
+      let activeCount = 0, inactiveCount = 0;
+      // Obsługa różnych formatów odpowiedzi backendu
+      let tokenArray = [];
+      if (Array.isArray(tokens)) {
+        tokenArray = tokens;
+      } else if (tokens.tokens) {
+        tokenArray = tokens.tokens;
+      } else if (tokens.data && Array.isArray(tokens.data.tokens)) {
+        tokenArray = tokens.data.tokens;
+      }
+      tokenArray.forEach((t) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span style="display:inline-block;min-width:120px;max-width:160px;white-space:nowrap;overflow-x:auto;font-family:monospace;font-size:1.15em;padding:6px 12px;letter-spacing:2px;background:#f5f5f5;border-radius:6px;">${t.token}</span> <span style="color:#555;font-size:1.1em;">|</span> <span style="min-width:80px;max-width:120px;display:inline-block;font-size:1.1em;white-space:nowrap;overflow-x:auto;">${t.username}</span> <span style="color:#555;font-size:1.1em;">|</span> <span style="min-width:60px;max-width:90px;display:inline-block;font-size:1.1em;white-space:nowrap;overflow-x:auto;">użyć: ${t.uses ?? t.usageCount}</span>`;
+        // Obsługa undefined/null dla t.active
+        if (t.active === true) {
+          activeCount++;
+          const btn = document.createElement('button');
+          btn.textContent = 'Dezaktywuj';
+          btn.style = 'margin-left:12px;padding:4px 10px;border-radius:5px;background:#ff5252;color:#fff;border:none;cursor:pointer;font-size:0.95em;';
+          btn.onclick = async function() {
+            try {
+              btn.textContent = 'Dezaktywuję...';
+              btn.style.opacity = '0.7';
+              btn.disabled = true;
+              const res = await fetch(`${API_URL}/api/tokens/${t._id}/deactivate`, { method: 'PATCH' });
+              if (!res.ok) throw new Error('Błąd dezaktywacji');
+              await renderTokenLists();
+            } catch (error) {
+              console.error('Błąd:', error);
+              document.getElementById('formMessage').textContent = 'Błąd dezaktywacji tokenu';
+              document.getElementById('formMessage').style.color = '#ff5252';
+              btn.textContent = 'Dezaktywuj';
+              btn.style.opacity = '1';
+              btn.disabled = false;
+            }
+          };
+          li.appendChild(btn);
+          activeList.appendChild(li);
+        } else {
+          inactiveCount++;
+          const btn = document.createElement('button');
+          btn.textContent = 'Aktywuj';
+          btn.style = 'margin-left:12px;padding:4px 10px;border-radius:5px;background:#2a7cff;color:#fff;border:none;cursor:pointer;font-size:0.95em;';
+          btn.onclick = async function() {
+            try {
+              btn.textContent = 'Aktywuję...';
+              btn.style.opacity = '0.7';
+              btn.disabled = true;
+              const res = await fetch(`${API_URL}/api/tokens/${t._id}/activate`, { method: 'PATCH' });
+              if (!res.ok) throw new Error('Błąd aktywacji');
+              await renderTokenLists();
+            } catch (error) {
+              console.error('Błąd:', error);
+              document.getElementById('formMessage').textContent = 'Błąd aktywacji tokenu';
+              document.getElementById('formMessage').style.color = '#ff5252';
+              btn.textContent = 'Aktywuj';
+              btn.style.opacity = '1';
+              btn.disabled = false;
+            }
+          };
+          li.appendChild(btn);
+          inactiveList.appendChild(li);
+        }
+      });
+      if (activeCount === 0) activeList.innerHTML = '<li style="text-align:center;color:#888;font-size:1.1em;">Brak aktywnych tokenów</li>';
+      if (inactiveCount === 0) inactiveList.innerHTML = '<li style="text-align:center;color:#888;font-size:1.1em;">Brak nieaktywnych tokenów</li>';
+    }
+    renderTokenLists();
+  </script>
+</body>
+</html>
