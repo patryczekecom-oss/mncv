@@ -1,0 +1,209 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
+require('dotenv').config();
+
+const app = express();
+// Umożliwia poprawne rozpoznawanie IP za proxy (np. Render.com)
+app.set('trust proxy', 1);
+
+// Import routes safely
+let authRoutes, tokenRoutes, userRoutes, cardRoutes;
+try {
+  authRoutes = require('./routes/auth');
+  tokenRoutes = require('./routes/tokens');
+  userRoutes = require('./routes/users');
+  cardRoutes = require('./routes/card');
+} catch (error) {
+  console.error('Routes import error:', error.message);
+}
+
+// Security middleware
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", process.env.FRONTEND_URL, "https://backendm-9np8.onrender.com"],
+      frameSrc: ["'self'"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameAncestors: ["'self'"]
+    }
+  }
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
+  message: {
+    error: 'Zbyt wiele żądań z tego IP, spróbuj ponownie później.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(limiter);
+
+// Compression middleware
+app.use(compression());
+
+// CORS configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      process.env.FRONTEND_URL,
+      'https://xyzobywatel.netlify.app',
+      'http://localhost:3000',
+      'http://localhost:8080',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:8080',
+      'https://localhost:3000',
+      'https://127.0.0.1:3000',
+      // Dodaj URL z którego faktycznie korzystasz
+      'https://backendm-9np8.onrender.com'
+    ];
+    
+    // Dozwolone domeny: xyzobywatel.netlify.app i jej subdomeny
+    const isNetlifyDomain = origin && (
+      origin === 'https://xyzobywatel.netlify.app'||
+      origin.endsWith('.netlify.app')
+    );
+
+    if (allowedOrigins.includes(origin) || isNetlifyDomain) {
+      callback(null, true);
+    } else {
+      console.warn('CORS blocked request from:', origin);
+      callback(new Error('Nie dozwolone przez CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie']
+};
+
+app.use(cors(corsOptions));
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+
+// MongoDB connection
+const connectDB = async () => {
+  try {
+    if (process.env.MONGODB_URI) {
+      const conn = await mongoose.connect(process.env.MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      });
+      console.log(`MongoDB Connected: ${conn.connection.host}`);
+    } else {
+      console.log('No MongoDB URI provided - running without database');
+    }
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    // Don't exit on MongoDB error for deployment
+    console.log('Continuing without database connection');
+  }
+};
+
+// Connect to database
+connectDB();
+
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Obywtel Backend API',
+    status: 'running',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
+});
+
+// API routes with error handling
+if (authRoutes) {
+  app.use('/api/auth', authRoutes);
+  app.use('/api', authRoutes); // For backward compatibility
+}
+if (tokenRoutes) app.use('/api/tokens', tokenRoutes);
+if (userRoutes) app.use('/api/users', userRoutes);
+if (cardRoutes) app.use('/api/card', cardRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      success: false,
+      error: 'Błąd walidacji danych',
+      details: err.message
+    });
+  }
+  
+  if (err.name === 'CastError') {
+    return res.status(400).json({
+      success: false,
+      error: 'Nieprawidłowy format ID'
+    });
+  }
+  
+  if (err.code === 11000) {
+    return res.status(400).json({
+      success: false,
+      error: 'Duplikat danych - rekord już istnieje'
+    });
+  }
+  
+  res.status(500).json({
+    success: false,
+    error: 'Wewnętrzny błąd serwera',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Coś poszło nie tak'
+  });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Endpoint nie został znaleziony'
+  });
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  mongoose.connection.close(() => {
+    console.log('MongoDB connection closed.');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received. Shutting down gracefully...');
+  mongoose.connection.close(() => {
+    console.log('MongoDB connection closed.');
+    process.exit(0);
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+});
